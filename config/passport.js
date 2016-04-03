@@ -3,9 +3,8 @@
 // load strategies
 var LocalStrategy = require('passport-local').Strategy;
 
-// load up the user model
-var bcrypt = require('bcrypt-nodejs');
-
+//load models
+var User = require('../app/models/user');
 
 
 // expose this function to our app using module.exports
