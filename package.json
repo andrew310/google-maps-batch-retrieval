@@ -1,6 +1,11 @@
 {
-  "name": "node-authentication",
+  "name": "express-passport-handlebars",
+  "version": "2.0.0",
+  "description": "a boilerplate for express app projects",
+  "author": "andrew brown andrewbrown600@gmail.com",
   "main": "server.js",
+  "repository": "https://github.com/andrew310/express-passport-handlebars",
+  "license": "MIT",
   "scripts": {
     "start": "node ./server"
   },
