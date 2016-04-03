@@ -1,10 +1,6 @@
 // config/database.js
 module.exports = {
-    'connection': {
-        'host': '',
-        'user': '',
-        'password': ''
-    },
-	'database': '',
-    'users_table': ''
+
+    'url' : 'mongodb://localhost/passport' // looks like mongodb://<user>:<pass>@mongo.onmodulus.net:27017/Mikha4ot
+
 };
