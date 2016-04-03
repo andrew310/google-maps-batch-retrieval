@@ -2,11 +2,12 @@
 
 // set up ======================================================================
 var express  = require('express');
+var app = express();
+var mongoose = require('mongoose');
 var session  = require('express-session');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var morgan = require('morgan');
-var app = express();
 var port = process.env.PORT || 8080;
 var path = require('path');     //used for file path
 var passport = require('passport');
@@ -15,6 +16,8 @@ var handlebars = require('express-handlebars').create({defaultLayout:'main'});
 
 // configuration ===============================================================
 require('./config/passport')(passport); // pass passport for configuration
+var configDB = require('./config/database.js');
+mongoose.connect(configDB.url); // database connection pool
 
 // set up express application
 app.use(morgan('dev')); // log every request to the console
