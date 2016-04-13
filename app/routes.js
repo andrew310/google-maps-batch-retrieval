@@ -1,12 +1,43 @@
 // app/routes.js
+var xls = require('excel'); //load excel 
+
+function convertToJSON(array) {
+  var first = array[0].join()
+  var headers = first.split(',');
+  
+  var jsonData = [];
+  for ( var i = 1, length = array.length; i < length; i++ )
+  {
+   
+    var myRow = array[i].join();
+    var row = myRow.split(',');
+    
+    var data = {};
+    for ( var x = 0; x < row.length; x++ )
+    {
+      data[headers[x]] = row[x];
+    }
+    jsonData.push(data);
+
+  }
+  return jsonData;
+};
+
+
 module.exports = function(app, passport) {
-	var fs = require('fs-extra');       //File System - for file manipulation
+	var fs = require('fs-extra'); //File System - for file manipulation
+
 
 	/**
 	 * HOME PAGE
 	 */
 	app.get('/', function(req, res) {
 		res.render('index.handlebars');
+	});
+
+	app.get('/xlsx', function(req, res) {
+		// render the page and pass in any flash data if it exists
+		res.render('xlsx.handlebars');
 	});
 
 	/**
@@ -70,20 +101,28 @@ module.exports = function(app, passport) {
 	 * FILE UPLOAD
 	 * nb: it does not have to be a csv, this should process any file upload
 	 */
-	app.post('/endpoints/csv', function(req, res, next) {
+	app.post('/endpoints/getImages', function(req, res, next) {
 		var fstream;
+		var stuff;
 		req.pipe(req.busboy);
 		req.busboy.on('file', function (fieldname, file, filename) {
 			console.log("Uploading: " + filename);
 			//path is parent folder and then public/csv
-			fstream = fs.createWriteStream(__dirname + '/../public/csv/' + filename);
+			fstream = fs.createWriteStream(__dirname + '/../public/uploads/' + filename);
 			file.pipe(fstream);
 			fstream.on('close', function () {
 				console.log("Upload Finished of " + filename);
 			});
+			xls(__dirname + '/../public/uploads/' + filename, function(err, data) {
+  				if(err) throw err;
+    			var stuff = convertToJSON(data);
+    			//res.type('text/plain');
+				res.render('property.handlebars', {
+					stuff // get the user out of session and pass to template
+				});
+			});
 		});
-		res.type('text/plain');
-		res.send('done');
+
 	});
 };
 
