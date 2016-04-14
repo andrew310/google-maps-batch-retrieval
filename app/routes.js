@@ -1,5 +1,6 @@
 // app/routes.js
-var xls = require('excel'); //load excel 
+var xls = require('excel'); //load excel
+
 
 function convertToJSON(array) {
   var first = array[0].join()
@@ -116,6 +117,18 @@ module.exports = function(app, passport) {
 			xls(__dirname + '/../public/uploads/' + filename, function(err, data) {
   				if(err) throw err;
     			var stuff = convertToJSON(data);
+
+				fs.exists(__dirname + '/../public/uploads/' + filename, function(exists) {
+				  if(exists) {
+				    //Show in green
+				    console.log('File exists. Deleting now ...');
+				    fs.unlink(__dirname + '/../public/uploads/' + filename);
+				  } else {
+				    //Show in red
+				    console.log('File not found, so not deleting.');
+				  }
+				});
+
     			//res.type('text/plain');
 				res.render('property.handlebars', {
 					stuff // get the user out of session and pass to template
