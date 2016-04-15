@@ -1,9 +1,14 @@
 // app/routes.js
 var xls = require('excel'); //load excel
+var fs = require('fs-extra'); //File System - for file manipulation
+var request = require('request');
+var http = require('http');
+var zipFolder = require('zip-folder');
+var waitUntil = require('wait-until');
 
 
 function convertToJSON(array) {
-  var first = array[0].join()
+  var first = array[0].join();
   var headers = first.split(',');
   
   var jsonData = [];
@@ -22,12 +27,90 @@ function convertToJSON(array) {
 
   }
   return jsonData;
+}
+
+function countFiles(directory) {
+	count = 0;
+  fs.readdir(directory, function(err, files) {
+  	count = files.length;
+  });
+  return count;
+}
+
+function compareFiles(count, count2){
+
+	return (count==count2 ? true : false);
+
+}
+
+function zipUp(filepath, count){
+
+	console.log("COUNTING:");
+	console.log(compareFiles(countFiles(filepath), count));
+	waitUntil()
+    .interval(500)
+    .times(10)
+    .condition(function() {
+        return (compareFiles(countFiles(filepath), count) ? true : false);
+    })
+    .done(function(result) {
+        // do stuff
+        zipFolder(filepath, './public/zips/archive.zip', function(err) {
+			if(err) {
+				console.log('oh no!', err);
+			} else {
+				console.log('EXCELLENT');
+			}
+		});
+    });
+
+
+}
+
+
+//called once, loops through JSON and makes request for each address
+var download = function (files, filepath){
+	var count = 0;
+	for(var i in files){
+		var address = files[i].ADDRESS;
+		var city = files[i].City;
+		var state = files[i].State;
+		var zip = files[i].Zip;
+		var url = "https://maps.googleapis.com/maps/api/streetview?size=600x300&location="+address + " " + city + " " +state + " " + zip + "&key=AIzaSyDyEo8dMx4Z9q4VxaJfDhM5u4yulYX5afo";
+	    var url2 = "https://maps.googleapis.com/maps/api/staticmap?maptype=satellite&center="+address + " " + city + " " +state + " " + zip + "&zoom=19&size=600x300&key=AIzaSyAcQrsRSOCK90kMnwANw9dcAqcv5FOfbhY"
+	    // extract the file name
+	    console.log(url);
+	    var file_name = address;
+	    downloadRequest(url, url2, file_name, filepath);
+	    count++;
+	}
+	zipUp(filepath, count);
+
+};
+
+//called for each photo request
+var downloadRequest = function(url, url2, filename, path){
+	var fullpath = path + filename + ".jpg";
+
+	var needSat = false;
+	//request(url).pipe(fs.createWriteStream(fullpath));
+	request
+		.get(url)
+		.on('response', function(response) {
+			console.log(response.statusCode) // 200 
+	    	console.log(response.headers['content-length']) // 'image/png'
+	    	if(parseInt(response.headers['content-length']) >= 6000){
+	    		response.pipe(fs.createWriteStream(fullpath));
+	    	}else { needSat = true;
+	    		request
+				  .get(url2)
+				  .pipe(fs.createWriteStream(fullpath));
+	    	}
+		})
 };
 
 
 module.exports = function(app, passport) {
-	var fs = require('fs-extra'); //File System - for file manipulation
-
 
 	/**
 	 * HOME PAGE
@@ -137,7 +220,59 @@ module.exports = function(app, passport) {
 		});
 
 	});
+
+	app.post('/endpoints/getZip', function(req, res, next) {
+		var fstream;
+		var stuff;
+		req.pipe(req.busboy);
+		req.busboy.on('file', function (fieldname, file, filename) {
+			console.log("Uploading: " + filename);
+			//path is parent folder and then public/csv
+			fstream = fs.createWriteStream(__dirname + '/../public/uploads/' + filename);
+			file.pipe(fstream);
+			fstream.on('close', function () {
+				console.log("Upload Finished of " + filename);
+			});
+			xls(__dirname + '/../public/uploads/' + filename, function(err, data) {
+  				if(err) throw err;
+    			var stuff = convertToJSON(data);
+
+    			var date = new Date();
+    			var folder = __dirname + '/../public/mapImages/';
+
+    			//call to download function, downloads the images
+    			download(stuff, folder);
+    			//zipUp(folder);
+
+
+    			//delete the excel file
+				fs.exists(__dirname + '/../public/uploads/' + filename, function(exists) {
+				  if(exists) {
+				    //Show in green
+				    console.log('File exists. Deleting now ...');
+				    fs.unlink(__dirname + '/../public/uploads/' + filename);
+				  } else {
+				    //Show in red
+				    console.log('File not found, so not deleting.');
+				  }
+				});
+
+    			//res.type('text/plain');
+				res.render('property.handlebars', {
+					stuff // get the user out of session and pass to template
+				});
+			});
+		});
+
+	});
+
+
+
 };
+
+
+
+
 
 // route middleware to make sure
 function isLoggedIn(req, res, next) {
