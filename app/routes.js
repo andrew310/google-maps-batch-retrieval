@@ -64,6 +64,7 @@ function zipUp(filepath, count){
 		});
     });
 
+   return "/zips/archive.zip";
 
 }
 
@@ -77,15 +78,15 @@ var download = function (files, filepath){
 		var state = files[i].State;
 		var zip = files[i].Zip;
 		var url = "https://maps.googleapis.com/maps/api/streetview?size=600x300&location="+address + " " + city + " " +state + " " + zip + "&key=AIzaSyDyEo8dMx4Z9q4VxaJfDhM5u4yulYX5afo";
-	    var url2 = "https://maps.googleapis.com/maps/api/staticmap?maptype=satellite&center="+address + " " + city + " " +state + " " + zip + "&zoom=19&size=600x300&key=AIzaSyAcQrsRSOCK90kMnwANw9dcAqcv5FOfbhY"
+	    var url2 = "https://maps.googleapis.com/maps/api/staticmap?maptype=satellite&center="+address + " " + city + " " +state + " " + zip + "&zoom=16&size=600x300&&markers=Color:red%7C" +address + " " + city + " " +state + " " + zip + "&key=AIzaSyAcQrsRSOCK90kMnwANw9dcAqcv5FOfbhY"
 	    // extract the file name
 	    console.log(url);
 	    var file_name = address;
 	    downloadRequest(url, url2, file_name, filepath);
 	    count++;
 	}
-	zipUp(filepath, count);
-
+	
+	return count;
 };
 
 //called for each photo request
@@ -241,8 +242,8 @@ module.exports = function(app, passport) {
     			var folder = __dirname + '/../public/mapImages/';
 
     			//call to download function, downloads the images
-    			download(stuff, folder);
-    			//zipUp(folder);
+    			var count = download(stuff, folder);
+    			var zip = zipUp(folder, count);
 
 
     			//delete the excel file
@@ -259,7 +260,7 @@ module.exports = function(app, passport) {
 
     			//res.type('text/plain');
 				res.render('property.handlebars', {
-					stuff // get the user out of session and pass to template
+					stuff, zip // get the user out of session and pass to template
 				});
 			});
 		});
